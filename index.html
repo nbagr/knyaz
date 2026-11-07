@@ -6,7 +6,7 @@
 <style>
   body {
     font-family: Arial, sans-serif;
-    background: #2b2b2b;
+    background: #1a1a1a;
     color: #eee;
     display: flex;
     flex-direction: column;
@@ -17,98 +17,107 @@
   h1 { margin: 0 0 10px; font-size: 22px; }
   #status { margin: 8px 0; font-size: 16px; min-height: 22px; }
   #status.win { color: #7f7; font-weight: bold; }
-  .board-wrap {
-    display: flex;
-    gap: 20px;
-    align-items: flex-start;
-  }
+  #status.check { color: #ff6; font-weight: bold; }
+  .board-wrap { display: flex; gap: 20px; align-items: flex-start; }
   #board {
     display: grid;
     grid-template-columns: repeat(3, 80px);
     grid-template-rows: repeat(4, 80px);
-    border: 3px solid #888;
+    border: 3px solid #444;
     user-select: none;
+    position: relative;
   }
   .cell {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: bold;
-    text-align: center;
-    line-height: 1.1;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; cursor: pointer;
+    font-size: 13px; font-weight: bold;
+    text-align: center; line-height: 1.1;
   }
   .cell.light { background: #e8d9b5; }
   .cell.dark  { background: #b58863; }
   .cell .piece {
-    width: 64px; height: 64px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 64px; height: 64px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
     font-size: 12px;
-    color: #fff;
-    box-shadow: inset 0 0 0 2px rgba(255,255,255,.3), 0 2px 4px rgba(0,0,0,.5);
-    transition: transform .1s;
+    box-shadow: 0 2px 4px rgba(0,0,0,.5);
+    transition: transform .15s ease, opacity .3s;
+    z-index: 1;
   }
-  .piece.p1 { background: #c0392b; } /* игрок 1 — красный */
-  .piece.p2 { background: #2980b9; } /* игрок 2 — синий */
-  .cell.sel .piece { transform: scale(1.08); box-shadow: 0 0 0 3px #ff0, inset 0 0 0 2px rgba(255,255,255,.3); }
+  .piece.white {
+    background: #f5f5f5; color: #111; border: 2px solid #111;
+    box-shadow: 0 2px 4px rgba(0,0,0,.6), inset 0 0 0 1px #ccc;
+  }
+  .piece.black {
+    background: #1b1b1b; color: #f0f0f0; border: 2px solid #f5f5f5;
+    box-shadow: 0 2px 4px rgba(0,0,0,.6), inset 0 0 0 1px #333;
+  }
+  .cell.sel .piece { transform: scale(1.08); box-shadow: 0 0 0 3px #ffd700; }
   .cell.target::after {
-    content: '';
-    position: absolute;
-    width: 22px; height: 22px;
-    border-radius: 50%;
-    background: rgba(0,255,0,.55);
-    pointer-events: none;
+    content: ''; position: absolute;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(0,200,0,.6); pointer-events: none;
   }
   .cell.target.capture::after {
-    background: rgba(255,0,0,.6);
-    width: 56px; height: 56px;
-    border-radius: 50%;
-    border: 3px dashed #f33;
+    width: 60px; height: 60px; border-radius: 50%;
+    border: 3px dashed #e33; background: rgba(255,0,0,.15);
     box-sizing: border-box;
-    background: rgba(255,0,0,.15);
   }
-  .cell.lastmove { box-shadow: inset 0 0 0 4px #ff0; }
-
-  .panel { width: 240px; background: #383838; border-radius: 8px; padding: 12px; }
-  .panel h3 { margin: 0 0 8px; font-size: 15px; border-bottom: 1px solid #555; padding-bottom: 4px; }
+  .cell.lastmove { box-shadow: inset 0 0 0 4px #ffd700; }
+  @keyframes captureFly {
+    0%   { transform: scale(1); opacity: 1; }
+    40%  { transform: scale(1.25) rotate(10deg); opacity: 1; }
+    100% { transform: scale(0.2) translateY(-40px) rotate(60deg); opacity: 0; }
+  }
+  .piece.captured { animation: captureFly .5s ease-out forwards; pointer-events: none; z-index: 5; }
+  @keyframes flash {
+    0% { background: rgba(255,50,50,.8); }
+    100% { background: transparent; }
+  }
+  .cell.capture-flash::before {
+    content: ''; position: absolute; inset: 0;
+    animation: flash .5s ease-out; z-index: 4; pointer-events: none;
+  }
+  .panel { width: 240px; background: #2a2a2a; border-radius: 8px; padding: 12px; }
+  .panel h3 { margin: 0 0 8px; font-size: 15px; border-bottom: 1px solid #444; padding-bottom: 4px; }
   .reserve { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; min-height: 34px; }
   .reserve .piece {
     width: 40px; height: 40px; font-size: 9px; cursor: pointer;
     border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    color: #fff; box-shadow: inset 0 0 0 2px rgba(255,255,255,.3);
   }
-  .reserve .piece.p1 { background: #c0392b; }
-  .reserve .piece.p2 { background: #2980b9; }
-  .reserve .piece.sel { box-shadow: 0 0 0 3px #ff0; }
+  .reserve .piece.white { background:#f5f5f5; color:#111; border:2px solid #111; }
+  .reserve .piece.black { background:#1b1b1b; color:#f0f0f0; border:2px solid #f5f5f5; }
+  .reserve .piece.sel { box-shadow: 0 0 0 3px #ffd700; }
   .reserve .piece.disabled { opacity: .35; cursor: not-allowed; }
-  .hint { font-size: 12px; color: #bbb; margin-bottom: 10px; }
+  @keyframes popIn {
+    0% { transform: scale(0); opacity: 0; }
+    70% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .reserve .piece.newly-added { animation: popIn .4s ease-out; }
+  .hint { font-size: 12px; color: #aaa; margin-bottom: 10px; min-height: 30px; }
   button {
     width: 100%; padding: 8px; margin-top: 8px; cursor: pointer;
-    background: #555; color: #eee; border: 1px solid #777; border-radius: 4px;
+    background: #444; color: #eee; border: 1px solid #666; border-radius: 4px;
   }
-  button:hover { background: #666; }
+  button:hover { background: #555; }
   #log {
-    font-size: 11px; color: #aaa; height: 100px; overflow-y: auto;
-    background: #2a2a2a; border-radius: 4px; padding: 6px; margin-top: 10px;
+    font-size: 11px; color: #aaa; height: 110px; overflow-y: auto;
+    background: #1e1e1e; border-radius: 4px; padding: 6px; margin-top: 10px;
   }
+  .capture-log { color: #ff8888; }
 </style>
 </head>
 <body>
 
 <h1>Княжеская битва</h1>
-<div id="status">Ход игрока 1 (красные)</div>
+<div id="status">Ход белых</div>
 
 <div class="board-wrap">
   <div id="board"></div>
   <div class="panel">
-    <h3>Резерв игрока 1</h3>
+    <h3>Резерв белых</h3>
     <div id="reserve1" class="reserve"></div>
-    <h3>Резерв игрока 2</h3>
+    <h3>Резерв чёрных</h3>
     <div id="reserve2" class="reserve"></div>
     <div class="hint" id="hint">Выберите фигуру на доске или в резерве.</div>
     <button id="restart">Новая игра</button>
@@ -119,60 +128,59 @@
 <script>
 /* ============ МОДЕЛЬ ============ */
 const COLS = 3, ROWS = 4;
-// types: K=князь, V=воевода, W=витязь, L=лучник, C=командир лучников
 const NAMES = { K:'Князь', V:'Воевода', W:'Витязь', L:'Лучник', C:'Командир' };
 
+// owner 1 = белые (СНИЗУ, ходят вверх), owner 2 = чёрные (СВЕРХУ, ходят вниз)
 let state = null;
+let animating = false;
 
 function createInitialState() {
   return {
     board: [
-      // row 0
-      [ {type:'V', owner:1}, {type:'K', owner:1}, {type:'W', owner:1} ],
+      // row 0 — чёрные сверху
+      [ {type:'V', owner:2}, {type:'K', owner:2}, {type:'W', owner:2} ],
       // row 1
-      [ null, {type:'L', owner:1}, null ],
-      // row 2
       [ null, {type:'L', owner:2}, null ],
-      // row 3
-      [ {type:'W', owner:2}, {type:'K', owner:2}, {type:'V', owner:2} ]
+      // row 2
+      [ null, {type:'L', owner:1}, null ],
+      // row 3 — белые снизу
+      [ {type:'W', owner:1}, {type:'K', owner:1}, {type:'V', owner:1} ]
     ],
     reserves: { 1: [], 2: [] },
     turn: 1,
     gameOver: false,
     winner: null,
-    // визуальные
-    selected: null,       // {kind:'board', r,c} | {kind:'reserve', owner, index}
+    selected: null,
     legalMoves: [],
-    lastMove: null
+    lastMove: null,
+    newlyAddedReserve: null
   };
 }
 
 function clonePiece(p) { return p ? {type:p.type, owner:p.owner} : null; }
 
 /* ============ ДВИЖЕНИЕ ФИГУР ============ */
-
-// возвращает массив [dr,dc] возможных шагов фигуры данного типа/владельца в данной позиции
 function getMovesForPiece(piece, r, c) {
   const dirs = [];
   const {type, owner} = piece;
-  const forward = owner === 1 ? -1 : 1; // игрок 1 ходит вверх (к row 0), игрок 2 — вниз
+  // белые (1) снизу → вверх (dr = -1); чёрные (2) сверху → вниз (dr = +1)
+  const forward = owner === 1 ? -1 : 1;
 
   const addIf = (dr, dc) => {
     const nr = r + dr, nc = c + dc;
     if (nr<0||nr>=ROWS||nc<0||nc>=COLS) return;
     const target = state.board[nr][nc];
-    if (target && target.owner === owner) return; // своя фигура
+    if (target && target.owner === owner) return;
     dirs.push([dr, dc]);
   };
 
   switch(type) {
-    case 'K': // король — 8 направлений по 1
-    case 'C': // командир лучников — по сути тоже король, но назад по диагонали нельзя
+    case 'K':
+    case 'C':
       for (const dr of [-1,0,1])
         for (const dc of [-1,0,1]) {
           if (dr===0 && dc===0) continue;
           if (type === 'C') {
-            // назад по диагонали нельзя: "назад" = в направлении, противоположном forward
             const isDiagonal = dr!==0 && dc!==0;
             const isBackward = dr === -forward;
             if (isDiagonal && isBackward) continue;
@@ -180,22 +188,20 @@ function getMovesForPiece(piece, r, c) {
           addIf(dr, dc);
         }
       break;
-    case 'V': // ладья — 4 направления по 1
+    case 'V':
       addIf(-1,0); addIf(1,0); addIf(0,-1); addIf(0,1);
       break;
-    case 'W': // слон — 4 диагонали по 1
+    case 'W':
       addIf(-1,-1); addIf(-1,1); addIf(1,-1); addIf(1,1);
       break;
-    case 'L': // лучник — только вперёд на 1
-      addIf(forward, 0);
+    case 'L':
+      addIf(forward, 0); // только вперёд
       break;
   }
   return dirs;
 }
 
-/* ============ ЛОГИКА ИГРЫ ============ */
-
-function currentPlayer() { return state.turn; }
+/* ============ ЛОГИКА ============ */
 function opponent(p) { return p === 1 ? 2 : 1; }
 
 function piecesOnBoard(owner, type) {
@@ -211,23 +217,18 @@ function countAllPiecesOfPlayer(owner) {
   return piecesOnBoard(owner).length + state.reserves[owner].length;
 }
 
-// проверка легальности ввода из резерва
 function canPlaceFromReserve(owner, index, r, c) {
   if (state.board[r][c]) return false;
   const piece = state.reserves[owner][index];
   if (!piece) return false;
-  const type = piece.type;
-  // лучник не может быть поставлен на последний ряд (для своего владельца)
-  if (type === 'L') {
+  if (piece.type === 'L') {
+    // белые снизу → последний ряд для них row 0; чёрные сверху → row 3
     const lastRow = owner === 1 ? 0 : ROWS-1;
     if (r === lastRow) return false;
   }
-  // командир лучников при вводе обращается в обычного лучника
-  // (по правилам: "если его съедают, то обратно на поле он вводится, как обычный лучник")
   return true;
 }
 
-// получить фигуру из резерва для ввода (с учётом превращения командира в лучника)
 function getReservePieceForPlacement(owner, index) {
   const p = state.reserves[owner][index];
   if (!p) return null;
@@ -235,7 +236,6 @@ function getReservePieceForPlacement(owner, index) {
   return {type:p.type, owner};
 }
 
-// Клонирование состояния для проверки "остались ли ходы" у игрока
 function snapshot() {
   return {
     board: state.board.map(row => row.map(clonePiece)),
@@ -246,16 +246,13 @@ function snapshot() {
   };
 }
 
-// Есть ли хоть один ход у игрока (по доске или ввод из резерва)?
 function hasAnyMove(owner) {
-  // ходы фигур на доске
   for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) {
     const p = state.board[r][c];
     if (p && p.owner===owner) {
       if (getMovesForPiece(p, r, c).length > 0) return true;
     }
   }
-  // ввод из резерва
   if (state.reserves[owner].length > 0) {
     for (let i=0;i<state.reserves[owner].length;i++) {
       for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) {
@@ -266,36 +263,31 @@ function hasAnyMove(owner) {
   return false;
 }
 
-// Шах ли князю игрока? (есть ли атакующая фигура противника, которая может побить князя)
 function isKingInCheck(owner) {
   const kingPos = piecesOnBoard(owner, 'K')[0];
-  if (!kingPos) return false; // князя нет (не должно случаться в норме, но подстрахуемся)
+  if (!kingPos) return false;
   const enemy = opponent(owner);
   for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) {
     const p = state.board[r][c];
     if (!p || p.owner !== enemy) continue;
-    const moves = getMovesForPiece(p, r, c);
-    for (const [dr,dc] of moves) {
+    for (const [dr,dc] of getMovesForPiece(p, r, c)) {
       if (r+dr === kingPos.r && c+dc === kingPos.c) return true;
     }
   }
   return false;
 }
 
-// Симуляция хода для проверки, остаётся ли князь под шахом
 function simulateBoardMove(fromR, fromC, toR, toC) {
   const snap = snapshot();
   const movingPiece = clonePiece(state.board[fromR][fromC]);
-  const capturedPiece = clonePiece(state.board[toR][toC]);
   state.board[toR][toC] = movingPiece;
   state.board[fromR][fromC] = null;
-  // превращение лучника в командира при достижении последнего ряда
   if (movingPiece.type === 'L') {
+    // белые снизу → превращение на row 0; чёрные сверху → row 3
     const lastRow = movingPiece.owner === 1 ? 0 : ROWS-1;
     if (toR === lastRow) movingPiece.type = 'C';
   }
   const check = isKingInCheck(movingPiece.owner);
-  // откат
   state.board = snap.board;
   state.reserves = snap.reserves;
   return check;
@@ -312,16 +304,7 @@ function simulatePlacement(owner, index, toR, toC) {
   return check;
 }
 
-// Оставляет ли ход князя под шахом?
-function moveLeavesKingInCheck(fromR, fromC, toR, toC) {
-  const piece = state.board[fromR][fromC];
-  if (!piece) return true;
-  if (isKingInCheck(piece.owner)) return true; // если уже шах — нельзя проверить "после", но проверим симуляцией
-  return simulateBoardMove(fromR, fromC, toR, toC);
-}
-
 /* ============ ОТРИСОВКА ============ */
-
 const boardEl = document.getElementById('board');
 const statusEl = document.getElementById('status');
 const hintEl = document.getElementById('hint');
@@ -329,15 +312,18 @@ const logEl = document.getElementById('log');
 const reserve1El = document.getElementById('reserve1');
 const reserve2El = document.getElementById('reserve2');
 
-function log(msg) {
+function log(msg, isCapture) {
   const d = document.createElement('div');
   d.textContent = msg;
+  if (isCapture) d.className = 'capture-log';
   logEl.prepend(d);
 }
 
 function pieceLabel(type) {
   return { K:'Кн', V:'Вое', W:'Вит', L:'Луч', C:'Ком' }[type] || '?';
 }
+function ownerLabel(owner) { return owner === 1 ? 'белые' : 'чёрные'; }
+function ownerClass(owner) { return owner === 1 ? 'white' : 'black'; }
 
 function render() {
   boardEl.innerHTML = '';
@@ -350,12 +336,11 @@ function render() {
       const p = state.board[r][c];
       if (p) {
         const pd = document.createElement('div');
-        pd.className = 'piece ' + (p.owner===1?'p1':'p2');
+        pd.className = 'piece ' + ownerClass(p.owner);
         pd.textContent = pieceLabel(p.type);
         cell.appendChild(pd);
       }
 
-      // подсветка
       if (state.selected && state.selected.kind==='board' &&
           state.selected.r===r && state.selected.c===c) {
         cell.classList.add('sel');
@@ -380,13 +365,13 @@ function render() {
   renderReserve(2, reserve2El);
 
   if (state.gameOver) {
-    statusEl.textContent = 'Игра окончена! Победил игрок ' + state.winner;
-    statusEl.classList.add('win');
+    statusEl.textContent = 'Игра окончена! Победили ' + ownerLabel(state.winner);
+    statusEl.className = 'win';
   } else {
     const inCheck = isKingInCheck(state.turn);
-    statusEl.textContent = 'Ход игрока ' + state.turn + ' (' + (state.turn===1?'красные':'синие') + ')' +
+    statusEl.textContent = 'Ход ' + ownerLabel(state.turn) +
       (inCheck ? ' — ШАХ КНЯЗЮ!' : '');
-    statusEl.classList.toggle('win', inCheck);
+    statusEl.className = inCheck ? 'check' : '';
   }
 }
 
@@ -402,20 +387,24 @@ function renderReserve(owner, el) {
   }
   arr.forEach((p, i) => {
     const d = document.createElement('div');
-    d.className = 'piece ' + (owner===1?'p1':'p2');
+    d.className = 'piece ' + ownerClass(owner);
     d.textContent = pieceLabel(p.type);
     if (state.selected && state.selected.kind==='reserve' &&
         state.selected.owner===owner && state.selected.index===i) {
       d.classList.add('sel');
     }
     if (state.gameOver || state.turn !== owner) d.classList.add('disabled');
+    if (state.newlyAddedReserve &&
+        state.newlyAddedReserve.owner === owner &&
+        state.newlyAddedReserve.index === i) {
+      d.classList.add('newly-added');
+    }
     d.addEventListener('click', () => onReserveClick(owner, i));
     el.appendChild(d);
   });
 }
 
 /* ============ ОБРАБОТКА КЛИКОВ ============ */
-
 function clearSelection() {
   state.selected = null;
   state.legalMoves = [];
@@ -428,11 +417,8 @@ function computeLegalMovesFromSelected() {
     const {r,c} = state.selected;
     const p = state.board[r][c];
     if (!p) return;
-    const owner = p.owner;
-    const inCheck = isKingInCheck(owner);
     for (const [dr,dc] of getMovesForPiece(p, r, c)) {
       const nr = r+dr, nc = c+dc;
-      // нельзя оставлять/приводить к шаху
       if (simulateBoardMove(r,c,nr,nc)) continue;
       state.legalMoves.push({r:nr, c:nc});
     }
@@ -447,10 +433,9 @@ function computeLegalMovesFromSelected() {
 }
 
 function onCellClick(r, c) {
-  if (state.gameOver) return;
+  if (state.gameOver || animating) return;
   const turn = state.turn;
 
-  // Если что-то выделено и клетка в списке легальных — делаем ход/ввод
   if (state.selected) {
     const target = state.legalMoves.find(m => m.r===r && m.c===c);
     if (target) {
@@ -464,23 +449,21 @@ function onCellClick(r, c) {
   }
 
   const p = state.board[r][c];
-  // клик по своей фигуре — выделить
   if (p && p.owner === turn) {
     state.selected = {kind:'board', r, c};
     computeLegalMovesFromSelected();
-    hintEl.textContent = 'Выбрана фигура: ' + NAMES[p.type] + ' (' + (p.owner===1?'красные':'синие') + ')';
+    hintEl.textContent = 'Выбрана фигура: ' + NAMES[p.type] + ' (' + ownerLabel(p.owner) + ')';
     render();
     return;
   }
 
-  // клик по пустой/чужой без выделения — снять выделение
   clearSelection();
   hintEl.textContent = 'Выберите фигуру на доске или в резерве.';
   render();
 }
 
 function onReserveClick(owner, index) {
-  if (state.gameOver) return;
+  if (state.gameOver || animating) return;
   if (owner !== state.turn) return;
   state.selected = {kind:'reserve', owner, index};
   computeLegalMovesFromSelected();
@@ -490,38 +473,70 @@ function onReserveClick(owner, index) {
   render();
 }
 
-/* ============ ХОДЫ ============ */
+/* ============ АНИМАЦИЯ ВЗЯТИЯ ============ */
+function animateCapture(toR, toC) {
+  return new Promise(resolve => {
+    const cellEl = boardEl.querySelector(`.cell[data-r="${toR}"][data-c="${toC}"]`);
+    if (!cellEl) return resolve();
+    const pieceEl = cellEl.querySelector('.piece');
+    if (!pieceEl) return resolve();
+    pieceEl.classList.add('captured');
+    cellEl.classList.add('capture-flash');
+    setTimeout(resolve, 500);
+  });
+}
 
+/* ============ ХОДЫ ============ */
 function doBoardMove(fromR, fromC, toR, toC) {
   const movingPiece = state.board[fromR][fromC];
   const capturedPiece = state.board[toR][toC];
+
+  if (capturedPiece) {
+    animating = true;
+    state.selected = null;
+    state.legalMoves = [];
+    render();
+    animateCapture(toR, toC).then(() => {
+      executeBoardMove(fromR, fromC, toR, toC, capturedPiece);
+      animating = false;
+    });
+  } else {
+    executeBoardMove(fromR, fromC, toR, toC, null);
+  }
+}
+
+function executeBoardMove(fromR, fromC, toR, toC, capturedPiece) {
+  const movingPiece = state.board[fromR][fromC];
   const mover = movingPiece.owner;
 
-  // перемещение
   state.board[toR][toC] = movingPiece;
   state.board[fromR][fromC] = null;
   state.lastMove = {fromR, fromC, toR, toC};
+  state.newlyAddedReserve = null;
 
-  // взятие
   if (capturedPiece) {
-    // если съели командира лучников — в резерв попадёт обычный лучник
+    const reserveType = (capturedPiece.type === 'C') ? 'L' : capturedPiece.type;
+    state.reserves[mover].push({type: reserveType, owner: mover});
+    const newIndex = state.reserves[mover].length - 1;
+    state.newlyAddedReserve = {owner: mover, index: newIndex};
+
+    const who = ownerLabel(mover);
     if (capturedPiece.type === 'C') {
-      state.reserves[mover].push({type:'L', owner: mover});
-      log(`${NAMES[movingPiece.type]} (${mover===1?'кр':'син'}) съел Командира лучников — получен Лучник в резерв.`);
+      log(`⚔ ${NAMES[movingPiece.type]} (${who}) съел Командира лучников — получен Лучник в резерв!`, true);
     } else {
-      state.reserves[mover].push({type: capturedPiece.type, owner: mover});
-      log(`${NAMES[movingPiece.type]} (${mover===1?'кр':'син'}) съел ${NAMES[capturedPiece.type]} — фигура в резерве.`);
+      log(`⚔ ${NAMES[movingPiece.type]} (${who}) съел ${NAMES[capturedPiece.type]} — фигура в резерве!`, true);
     }
   } else {
-    log(`${NAMES[movingPiece.type]} (${mover===1?'кр':'син'}) сделал ход.`);
+    log(`${NAMES[movingPiece.type]} (${ownerLabel(mover)}) сделал ход.`);
   }
 
-  // превращение лучника
+  // Превращение лучника
   if (movingPiece.type === 'L') {
+    // белые (снизу) → row 0; чёрные (сверху) → row 3
     const lastRow = mover === 1 ? 0 : ROWS-1;
     if (toR === lastRow) {
       movingPiece.type = 'C';
-      log(`Лучник (${mover===1?'кр':'син'}) стал Командиром лучников!`);
+      log(`⭐ Лучник (${ownerLabel(mover)}) стал Командиром лучников!`);
     }
   }
 
@@ -533,7 +548,8 @@ function doPlacement(owner, index, toR, toC) {
   state.reserves[owner].splice(index, 1);
   state.board[toR][toC] = pieceToPlace;
   state.lastMove = {fromR:-1, fromC:-1, toR, toC};
-  log(`Игрок ${owner} ввёл ${NAMES[pieceToPlace.type]} на клетку (${toR+1},${toC+1}).`);
+  state.newlyAddedReserve = null;
+  log(`${ownerLabel(owner)}: ввод ${NAMES[pieceToPlace.type]} на (${toR+1},${toC+1}).`);
   endTurnAndCheckWin(owner);
 }
 
@@ -541,41 +557,27 @@ function endTurnAndCheckWin(mover) {
   state.selected = null;
   state.legalMoves = [];
 
-  // Проверки окончания игры
-  // 1. Все фигуры у одного игрока
-  const moverPieces = countAllPiecesOfPlayer(mover);
   const opp = opponent(mover);
   const oppPieces = countAllPiecesOfPlayer(opp);
-  if (oppPieces === 0) {
-    return endGame(mover, 'У противника не осталось фигур.');
-  }
-  // (обратный случай невозможен при корректном ходе, но на всякий)
-  if (moverPieces === 0) {
-    return endGame(opp, 'У игрока не осталось фигур.');
-  }
+  if (oppPieces === 0) return endGame(mover, 'У противника не осталось фигур.');
 
-  // 2. У противника нет князя => мат невозможен, но "все фигуры у одного" - уже проверено
   const oppKings = piecesOnBoard(opp, 'K');
-  if (oppKings.length === 0) {
-    return endGame(mover, 'Князь противника уничтожен.');
-  }
+  if (oppKings.length === 0) return endGame(mover, 'Князь противника уничтожен.');
 
-  // 3. Ход переходит противнику. Проверяем, есть ли у него ходы (мат/пат по правилам)
   state.turn = opp;
 
   if (!hasAnyMove(opp)) {
-    // по правилам игра заканчивается, если у князя противника не осталось ходов
     return endGame(mover, 'У князя противника не осталось ходов (мат/пат).');
   }
 
-  // Примечание: князь не может быть "съеден" в этой игре,
-  // т.к. ход, оставляющий своего князя под боем, запрещён, а съесть князя = поставить мат.
-  // Но проверка на всякий случай:
-  if (piecesOnBoard(opp, 'K').length === 0) {
-    return endGame(mover, 'Князь противника повержен.');
-  }
-
   render();
+
+  if (state.newlyAddedReserve) {
+    setTimeout(() => {
+      state.newlyAddedReserve = null;
+      render();
+    }, 450);
+  }
 }
 
 function endGame(winner, reason) {
@@ -583,7 +585,7 @@ function endGame(winner, reason) {
   state.winner = winner;
   state.selected = null;
   state.legalMoves = [];
-  log(`ПОБЕДА игрока ${winner}! ${reason || ''}`);
+  log(`🏆 ПОБЕДА: ${ownerLabel(winner)}! ${reason || ''}`);
   render();
 }
 
@@ -592,10 +594,11 @@ document.getElementById('restart').addEventListener('click', startGame);
 
 function startGame() {
   state = createInitialState();
-  statusEl.classList.remove('win');
+  animating = false;
+  statusEl.className = '';
   logEl.innerHTML = '';
   hintEl.textContent = 'Выберите фигуру на доске или в резерве.';
-  log('Новая игра начата.');
+  log('Новая игра начата. Белые (снизу) ходят первыми.');
   render();
 }
 
